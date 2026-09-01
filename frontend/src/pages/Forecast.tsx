@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { getImpact, getNowcast } from '../services/api'
-import type { LocationPoint } from '../types/api'
+import type { LocationPoint, NowcastPoint } from '../types/api'
 import { useAsync } from '../hooks/useAsync'
 import LocationSelector, {
   DEFAULT_LOCATION,
 } from '../components/common/LocationSelector'
 import Panel from '../components/common/Panel'
 import ForecastChart from '../components/forecast/ForecastChart'
+import ForecastTimeline from '../components/forecast/ForecastTimeline'
 import LoadingState from '../components/common/LoadingState'
 import ErrorState from '../components/common/ErrorState'
 import DemoModeIndicator from '../components/common/DemoModeIndicator'
@@ -23,6 +24,18 @@ const IMPACT_CATEGORIES = [
   'hail',
   'visibility',
 ] as const
+
+const mapToForecastPoint = (p: NowcastPoint) => ({
+  lead_time_hours: p.horizon_hours,
+  thunderstorm_probability: p.thunderstorm_probability,
+  hail_probability: p.hail_probability,
+  cloudburst_probability: p.cloudburst_probability,
+  latitude: p.latitude,
+  longitude: p.longitude,
+  timestamp: p.forecast_time,
+  precipitation_mm: null,
+  wind_speed_ms: null,
+})
 
 export default function Forecast() {
   const [location, setLocation] = useState<LocationPoint>(DEFAULT_LOCATION)
@@ -91,11 +104,18 @@ export default function Forecast() {
         title="Forecast Timeline"
         subtitle="Probability (%) by lead hour"
         actions={
-          state.data?.model_label ? (
-            <span className="rounded-full border border-sky-800 bg-sky-900/30 px-2.5 py-0.5 text-xs text-sky-300">
-              {state.data.model_label}
-            </span>
-          ) : undefined
+          <span className="flex flex-wrap items-center gap-2">
+            {nowcast?.risk_start_hour != null && nowcast?.risk_end_hour != null && (
+              <span className="hidden items-center gap-1.5 rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 sm:inline-flex">
+                Peak risk: {nowcast.risk_start_hour}–{nowcast.risk_end_hour}h
+              </span>
+            )}
+            {state.data?.model_label ? (
+              <span className="rounded-full border border-sky-800 bg-sky-900/30 px-2.5 py-0.5 text-xs text-sky-300">
+                {state.data.model_label}
+              </span>
+            ) : undefined}
+          </span>
         }
       >
         {state.status === 'loading' && <LoadingState label="Loading forecast…" />}
@@ -104,20 +124,16 @@ export default function Forecast() {
         )}
         {state.status === 'success' && points.length > 0 && (
           <>
-            <ForecastChart
-              points={points.map((p) => ({
-                lead_time_hours: p.horizon_hours,
-                thunderstorm_probability: p.thunderstorm_probability,
-                hail_probability: p.hail_probability,
-                cloudburst_probability: p.cloudburst_probability,
-                latitude: p.latitude,
-                longitude: p.longitude,
-                timestamp: p.forecast_time,
-                precipitation_mm: null,
-                wind_speed_ms: null,
-              }))}
+            <ForecastTimeline
+              points={points.map(mapToForecastPoint)}
               overallRisk={overallRisk}
             />
+            <div className="mt-6">
+              <ForecastChart
+                points={points.map(mapToForecastPoint)}
+                overallRisk={overallRisk}
+              />
+            </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <MetricIndicator
                 label="Peak Thunderstorm"

@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Radar, Activity, Navigation } from 'lucide-react'
 import { getStormCells, getStormPredictions, getStormTracks } from '../services/api'
 import { useAsync } from '../hooks/useAsync'
@@ -8,7 +7,7 @@ import LoadingState from '../components/common/LoadingState'
 import ErrorState from '../components/common/ErrorState'
 import DemoModeIndicator from '../components/common/DemoModeIndicator'
 import MetricIndicator from '../components/common/MetricIndicator'
-import LeafletMap from '../components/map/LeafletMap'
+import StormMapVisualization from '../components/map/StormMapVisualization'
 import { getRiskMeta } from '../lib/riskLevels'
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -38,16 +37,6 @@ export default function StormTracking() {
   const highestIntensity = cells.length > 0
     ? Math.max(...cells.map((c) => c.intensity))
     : 0
-
-  const markers = useMemo(() => {
-    return cells.map((cell) => ({
-      latitude: cell.latitude,
-      longitude: cell.longitude,
-      label: `Cell ${cell.id} — ${cell.severity} (${Math.round(cell.intensity * 100)}%)`,
-      color: SEVERITY_COLORS[cell.severity] ?? '#64748b',
-      radius: 12 + Math.round(cell.intensity * 20),
-    }))
-  }, [cells])
 
   return (
     <div className="space-y-6">
@@ -90,36 +79,12 @@ export default function StormTracking() {
       </div>
 
       {/* Map visualization */}
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-        <div className="h-[460px] w-full">
-          {cellsState.status === 'loading' && (
-            <div className="flex h-full items-center justify-center">
-              <LoadingState label="Loading storm cells…" />
-            </div>
-          )}
-          {cellsState.status === 'error' && (
-            <div className="flex h-full items-center justify-center px-4">
-              <ErrorState
-                message={cellsState.error ?? 'Storm cell data unavailable'}
-                onRetry={cellsState.load}
-              />
-            </div>
-          )}
-          {cellsState.status === 'success' && (
-            <LeafletMap center={[20.0, 78.0]} zoom={6} markers={markers} />
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-slate-800 bg-slate-900/40 px-4 py-2 text-xs">
-          <span className="text-slate-400">Storm Cell Severity:</span>
-          {(['LOW', 'MODERATE', 'HIGH', 'EXTREME'] as const).map((lvl) => (
-            <span key={lvl} className="flex items-center gap-1.5">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: SEVERITY_COLORS[lvl] }}
-              />
-              <span className="text-slate-300">{lvl}</span>
-            </span>
-          ))}
+      <section
+        className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950"
+        aria-label="Storm tracking map"
+      >
+        <div className="p-1">
+          <StormMapVisualization height="h-[520px]" />
         </div>
       </section>
 

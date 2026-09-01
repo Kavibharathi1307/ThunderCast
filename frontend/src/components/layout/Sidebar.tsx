@@ -18,8 +18,8 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/risk-map', label: 'Risk Map', icon: Map },
   { to: '/forecast', label: 'Forecast', icon: LineChart },
+  { to: '/risk-map', label: 'Risk Map', icon: Map },
   { to: '/storm-tracking', label: 'Storm Tracking', icon: Radar },
   { to: '/alerts', label: 'Alerts', icon: Bell },
   { to: '/historical-events', label: 'Historical Events', icon: History },

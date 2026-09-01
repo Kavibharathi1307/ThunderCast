@@ -3,11 +3,16 @@
 This module is responsible for creating and reusing a single MongoDB client
 and exposing collection access. It is designed to be resilient: the backend
 must start and serve endpoints even when MongoDB Atlas is unavailable.
+
+Health reporting uses a background-thread cached probe so the /api/health
+endpoint never blocks waiting for MongoDB.
 """
 
 from __future__ import annotations
 
 import logging
+import threading
+import time
 
 from pymongo import MongoClient
 from pymongo.errors import ConfigurationError, ConnectionFailure, ServerSelectionTimeoutError
@@ -18,6 +23,19 @@ logger = logging.getLogger(__name__)
 
 _client: MongoClient | None = None
 _settings: Settings | None = None
+
+# ---------------------------------------------------------------------------
+# Cached DB status — refreshed by a background daemon thread so that the
+# /api/health endpoint *never* blocks waiting for a MongoDB round-trip.
+# ---------------------------------------------------------------------------
+_DB_STATUS_TTL_SECONDS: int = 25  # refresh interval
+
+_db_status_cache: dict = {
+    "status": "unavailable",
+    "timestamp": 0.0,       # time.monotonic() value
+}
+_db_status_lock = threading.Lock()
+_db_probe_started = False
 
 
 def get_client() -> MongoClient | None:
@@ -108,3 +126,70 @@ def close_connection() -> None:
             pass
     _client = None
     _settings = None
+
+
+# ---------------------------------------------------------------------------
+# Cached database-status layer
+# ---------------------------------------------------------------------------
+
+def _probe_database() -> str:
+    """Ping MongoDB and return ``"connected"`` or ``"unavailable"``.
+
+    This is the slow path — called only from the background thread.
+    """
+    settings = get_settings()
+    if not settings.MONGO_URI:
+        return "unavailable"
+    return "connected" if ping_database() else "unavailable"
+
+
+def _refresh_db_status() -> None:
+    """Background thread target: periodically probe MongoDB and cache the result."""
+    global _db_status_cache
+    while True:
+        status = _probe_database()
+        with _db_status_lock:
+            _db_status_cache = {
+                "status": status,
+                "timestamp": time.monotonic(),
+            }
+        time.sleep(_DB_STATUS_TTL_SECONDS)
+
+
+def warm_up_database_status() -> None:
+    """Start the background DB-status probe daemon (safe to call multiple times).
+
+    The very first call also does a non-blocking initial probe so the first
+    health request returns a meaningful cached value instantly.  If the probe
+    takes too long (e.g. DNS resolution stalls), we just leave the cache at
+    ``"unavailable"`` — the next cycle will try again.
+    """
+    global _db_probe_started
+    if _db_probe_started:
+        return
+    _db_probe_started = True
+
+    # Quick synchronous initial probe with a short deadline so the first
+    # health call is never completely blind.
+    try:
+        status = _probe_database()
+        with _db_status_lock:
+            _db_status_cache = {
+                "status": status,
+                "timestamp": time.monotonic(),
+            }
+    except Exception:
+        pass  # leave default "unavailable"
+
+    t = threading.Thread(target=_refresh_db_status, daemon=True, name="db-status-probe")
+    t.start()
+
+
+def get_database_status() -> str:
+    """Return the cached DB status string (``"connected"`` or ``"unavailable"``).
+
+    This never blocks — it reads the in-memory cache that the background
+    thread keeps fresh.
+    """
+    with _db_status_lock:
+        return _db_status_cache["status"]

@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { CloudLightning } from 'lucide-react'
+import { CloudLightning, RefreshCw } from 'lucide-react'
 import StatusIndicator from '../common/StatusIndicator'
 import DemoModeIndicator from '../common/DemoModeIndicator'
 import type { HealthState } from '../../hooks/useHealth'
+import { useEffect, useState } from 'react'
 
 interface HeaderProps {
   health: HealthState
@@ -22,6 +23,12 @@ export default function Header({
         ? 'Offline'
         : 'Checking…'
   const statusKey = health === 'ok' ? 'ok' : health === 'down' ? 'down' : 'checking'
+
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
@@ -52,13 +59,24 @@ export default function Header({
                 ThunderCast AI
               </span>
               <span className="block text-xs text-slate-400">
-                Convective Weather Intelligence
+                Convective Weather Intelligence &amp; Decision Support
               </span>
             </span>
           </NavLink>
         </div>
 
         <div className="flex items-center gap-3">
+          <span
+            className="hidden items-center gap-1.5 text-[11px] text-slate-500 md:flex"
+            title="Last updated"
+          >
+            <RefreshCw className="h-3 w-3" aria-hidden="true" />
+            {now.toLocaleTimeString(undefined, {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+
           {demoMode && <DemoModeIndicator />}
           <div className="hidden sm:block">
             <StatusIndicator status={statusKey} label={statusLabel} />

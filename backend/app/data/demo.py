@@ -275,15 +275,44 @@ def demo_historical_events() -> list[HistoricalEvent]:
     return events
 
 
-def demo_risk_grid() -> RiskGridResponse:
-    seed = _seed_from_coords(20.0, 78.0, 99)
+def demo_risk_grid(
+    center_latitude: float | None = None,
+    center_longitude: float | None = None,
+) -> RiskGridResponse:
+    """Return a clearly-labelled demo risk grid.
+
+    When ``center_latitude`` / ``center_longitude`` are provided the grid is
+    generated *around* that location so the map follows the selected city.
+    Otherwise a default central-India region is used (kept for backward
+    compatibility). The output is deterministic for a given location.
+    """
+    RESOLUTION = 0.5
+
+    if center_latitude is None or center_longitude is None:
+        center_latitude, center_longitude = 19.5, 77.5
+        span = 6  # cells each side
+    else:
+        span = 4  # cells each side -> a compact city-centred grid
+
+    # Round the centre to the nearest grid node so cells are stable & aligned.
+    center_lat = round(round(center_latitude / RESOLUTION) * RESOLUTION, 3)
+    center_lon = round(round(center_longitude / RESOLUTION) * RESOLUTION, 3)
+
+    seed = _seed_from_coords(center_lat, center_lon, 99)
     rng = _random.Random(seed)
-    cell_lats = [round(18.0 + i * 0.5, 1) for i in range(7)]
-    cell_lons = [round(76.0 + i * 0.5, 1) for i in range(7)]
+
+    cell_lats = [round(center_lat + i * RESOLUTION, 3) for i in range(-span, span + 1)]
+    cell_lons = [round(center_lon + i * RESOLUTION, 3) for i in range(-span, span + 1)]
+
     cells = []
     for lat in cell_lats:
         for lon in cell_lons:
-            thunder = _bounded(0.2 + rng.random() * 0.6)
+            # Distance from centre (in cells) slightly modulates the risk so the
+            # grid reads like a coherent "storm cluster" rather than random noise.
+            dist = max(abs(lat - center_lat), abs(lon - center_lon)) / RESOLUTION
+            proximity = max(0.0, 1.0 - dist / (span + 1))
+            core = 0.25 + rng.random() * 0.45 + proximity * 0.25
+            thunder = _bounded(core)
             hail = _bounded(0.1 + rng.random() * 0.3)
             cloudburst = _bounded(0.05 + rng.random() * 0.35)
             peak = max(thunder, hail, cloudburst)
@@ -308,12 +337,12 @@ def demo_risk_grid() -> RiskGridResponse:
             )
     return RiskGridResponse(
         bounds=RiskGridBounds(
-            min_latitude=17.5,
-            min_longitude=75.5,
-            max_latitude=21.5,
-            max_longitude=79.5,
+            min_latitude=cell_lats[0] - RESOLUTION / 2,
+            min_longitude=cell_lons[0] - RESOLUTION / 2,
+            max_latitude=cell_lats[-1] + RESOLUTION / 2,
+            max_longitude=cell_lons[-1] + RESOLUTION / 2,
         ),
-        resolution_deg=0.5,
+        resolution_deg=RESOLUTION,
         generated_at=_utcnow(),
         cells=cells,
     )

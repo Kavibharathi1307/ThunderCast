@@ -8,6 +8,7 @@ import EmptyState from '../components/common/EmptyState'
 import DemoModeIndicator from '../components/common/DemoModeIndicator'
 import MetricIndicator from '../components/common/MetricIndicator'
 import RiskBadge from '../components/risk/RiskBadge'
+import MonthlyActivityTrend from '../components/analytics/MonthlyActivityTrend'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -114,39 +115,12 @@ export default function HistoricalEvents() {
             </div>
 
             {/* Monthly trend chart */}
-            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                Monthly Activity Trend
-              </h4>
-              <div className="flex items-end gap-1 h-40">
-                {analytics.monthly_trends.map((trend) => {
-                  const max = Math.max(...analytics.monthly_trends.map((t) => t.count))
-                  const height = max > 0 ? (trend.count / max) * 100 : 0
-                  const isPeak = trend.month === analytics.peak_activity_month
-                  return (
-                    <div
-                      key={trend.month}
-                      className="flex flex-1 flex-col items-center gap-1"
-                    >
-                      <span className="text-[10px] text-slate-500">{trend.count}</span>
-                      <div
-                        className={`w-full rounded-t ${
-                          isPeak ? 'bg-sky-400' : 'bg-sky-900/70'
-                        } hover:bg-sky-500 transition-colors`}
-                        style={{ height: `${height}%` }}
-                        title={`${trend.month}: ${trend.count} events`}
-                      />
-                      <span className="text-[9px] text-slate-600 whitespace-nowrap">
-                        {trend.month.slice(5)}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="mt-2 text-xs text-slate-600">
-                Analysis period: {analytics.date_range_start} to {analytics.date_range_end}
-              </p>
-            </div>
+            <MonthlyActivityTrend
+              trends={analytics.monthly_trends}
+              peakMonth={analytics.peak_activity_month}
+              dateRangeStart={analytics.date_range_start}
+              dateRangeEnd={analytics.date_range_end}
+            />
           </div>
         )}
       </Panel>

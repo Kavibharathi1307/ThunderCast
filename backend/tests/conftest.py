@@ -15,6 +15,9 @@ def _clear_mongo_state(monkeypatch):
 
     database._client = None
     database._settings = None
+    # Reset the cached DB status so tests start from a clean state.
+    database._db_status_cache = {"status": "unavailable", "timestamp": 0.0}
+    database._db_probe_started = False
     monkeypatch.delenv("MONGO_URI", raising=False)
     monkeypatch.delenv("FRONTEND_URL", raising=False)
     yield

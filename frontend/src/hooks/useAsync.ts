@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { friendlyErrorMessage } from '../lib/errors'
 
 export type AsyncState<T> = {
   status: 'loading' | 'success' | 'error'
@@ -30,10 +31,10 @@ export function useAsync<T>(
       const data = await fetcherRef.current()
       setState({ status: 'success', data, error: null })
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Unable to reach the data service.'
+      const message = friendlyErrorMessage(
+        err,
+        'Unable to reach the data service.',
+      )
       setState({ status: 'error', data: null, error: message })
     }
   }, [])

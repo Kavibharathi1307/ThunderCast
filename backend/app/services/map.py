@@ -14,5 +14,10 @@ class RiskGridResponseWrapper(BaseModel):
     data: RiskGridResponse
 
 
-def get_risk_grid() -> RiskGridResponseWrapper:
-    return RiskGridResponseWrapper(data=demo_risk_grid())
+def get_risk_grid(
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> RiskGridResponseWrapper:
+    return RiskGridResponseWrapper(
+        data=demo_risk_grid(latitude, longitude),
+    )

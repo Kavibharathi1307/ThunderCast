@@ -8,6 +8,7 @@ interface HazardCardProps {
   riskLevel: RiskLevel
   confidence: number
   explanation: string | null
+  compact?: boolean
 }
 
 export default function HazardCard({
@@ -17,10 +18,24 @@ export default function HazardCard({
   riskLevel,
   confidence,
   explanation,
+  compact = false,
 }: HazardCardProps) {
   const meta = getRiskMeta(riskLevel)
   const pct = Math.round(probability * 100)
   const confPct = Math.round(confidence * 100)
+
+  if (compact) {
+    return (
+      <span
+        className={`inline-flex items-center gap-2 rounded-lg border bg-slate-950/40 px-2.5 py-1.5 text-xs ${meta.borderClass}`}
+        title={`${title}: ${pct}% probability, ${confPct}% confidence`}
+      >
+        <span className={meta.textClass} aria-hidden="true">{icon}</span>
+        <span className="font-semibold text-slate-200">{title.replace(' Risk', '')}</span>
+        <span className={`font-mono font-bold ${meta.textClass}`}>{pct}%</span>
+      </span>
+    )
+  }
 
   return (
     <article

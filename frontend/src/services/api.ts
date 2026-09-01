@@ -80,9 +80,15 @@ export async function getHistoricalAnalytics(): Promise<HistoricalAnalyticsRespo
   return data
 }
 
-export async function getRiskGrid(): Promise<RiskGridResponseWrapper> {
+export async function getRiskGrid(
+  latitude?: number,
+  longitude?: number,
+): Promise<RiskGridResponseWrapper> {
   const { data } = await apiClient.get<RiskGridResponseWrapper>(
     '/api/map/risk-grid',
+    latitude != null && longitude != null
+      ? { params: { latitude, longitude } }
+      : undefined,
   )
   return data
 }
