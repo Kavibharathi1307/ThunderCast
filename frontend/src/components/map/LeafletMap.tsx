@@ -63,11 +63,8 @@ interface LeafletMapProps {
   zoomControlPosition?: 'topleft' | 'topright' | 'bottomleft' | 'bottomright'
 }
 
-const DARK_TILES =
-  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-const OSM_ATTRIBUTION =
-  '&copy; OpenStreetMap contributors &copy; CARTO'
+const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+const OSM_ATTRIBUTION = '&copy; OpenStreetMap contributors'
 
 function createCircleIcon(color: string, radius: number, coordLabel?: string) {
   return L.divIcon({
@@ -243,8 +240,6 @@ export default function LeafletMap(props: LeafletMapProps) {
     polylines = [],
     rects = [],
     selectedLocation,
-    demo = false,
-    demoLabel = 'DEMO DATA',
     fitBounds = false,
     fitToken = 0,
     fitTo,
@@ -284,29 +279,13 @@ export default function LeafletMap(props: LeafletMapProps) {
       scrollWheelZoom: true,
       minZoom: 4,
     })
-    L.tileLayer(DARK_TILES, {
+    L.tileLayer(OSM_TILES, {
       maxZoom: 18,
       attribution: OSM_ATTRIBUTION,
     }).addTo(map)
     map.zoomControl.setPosition(zoomControlPosition)
     mapInstance.current = map
     selectedLayer.current = L.layerGroup().addTo(map)
-
-    // Fall back to OpenStreetMap tiles if the primary tile provider ever fails
-    // (network error, rate-limit, or a provider that demands an API key). This
-    // permanently switches the whole map so it can never be left showing a
-    // "broken / API key required" watermark.
-    let fallbackApplied = false
-    map.on('tileerror', () => {
-      const current = mapInstance.current
-      if (!current || fallbackApplied) return
-      fallbackApplied = true
-      current.eachLayer((layer) => {
-        if (layer instanceof L.TileLayer) {
-          layer.setUrl(OSM_TILES, true)
-        }
-      })
-    })
 
     // Keep the map correctly sized when containers resize (responsive layouts).
     resizeObserver.current = new ResizeObserver(() => {
@@ -469,19 +448,10 @@ export default function LeafletMap(props: LeafletMapProps) {
     }
   }, [selectedLocation])
 
-  // Demo watermark badge (rendered as an overlay above the map container).
-  const demoOverlay = demo ? (
-    <div className="pointer-events-none absolute left-1/2 top-2.5 z-[500] -translate-x-1/2">
-      <span
-        className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/60 bg-slate-950/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300 shadow-lg backdrop-blur"
-        role="status"
-        aria-label={demoLabel}
-      >
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
-        {demoLabel}
-      </span>
-    </div>
-  ) : null
+  // Demo watermark badge is intentionally not rendered in the production UI.
+  // The `demo`/`demoLabel` props remain accepted for caller compatibility but
+  // produce no visible overlay; live data is highlighted elsewhere instead.
+  const demoOverlay = null
 
   // Fit bounds the first time data is ready, and every time fitToken changes.
   useEffect(() => {

@@ -7,6 +7,7 @@ hardcoded here.
 
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -41,11 +42,28 @@ class Settings(BaseSettings):
     # The mode is surfaced in API responses via ``environment_mode`` so the app
     # never silently mixes demo and real data. REAL mode degrades gracefully to
     # DEMO when a provider is offline or the feature is disabled.
-    ENVIRONMENT_MODE: str = "DEMO"
+    #
+    # Production defaults to REAL; local/development defaults to DEMO so tests
+    # and offline development never hit the network. Either can be overridden
+    # with the ENVIRONMENT_MODE environment variable.
+    ENVIRONMENT_MODE: str | None = None
 
     # Whether the real providers are allowed to make outbound network calls.
     # Kept behind a flag so tests and offline environments never hit the network.
-    ALLOW_EXTERNAL_API: bool = False
+    # Defaults to enabled in production, disabled in development, and can be
+    # overridden with the ALLOW_EXTERNAL_API environment variable.
+    ALLOW_EXTERNAL_API: bool | None = None
+
+    @model_validator(mode="after")
+    def _apply_environment_defaults(self):
+        """Make REAL mode + outbound API the production defaults while keeping
+        both fully configurable via environment variables."""
+        production = self.ENVIRONMENT.lower() == "production"
+        if self.ENVIRONMENT_MODE is None:
+            self.ENVIRONMENT_MODE = "REAL" if production else "DEMO"
+        if self.ALLOW_EXTERNAL_API is None:
+            self.ALLOW_EXTERNAL_API = production
+        return self
 
     # Open-Meteo base URLs (free, no API key required). Overridable so tests can
     # point at a local/mock server without modifying code.

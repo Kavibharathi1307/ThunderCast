@@ -23,7 +23,9 @@ export interface WeatherObservation {
 
 export interface WeatherResponse {
   demo: boolean
-  demo_note: string
+  demo_note: string | null
+  environment_mode: 'DEMO' | 'REAL'
+  data_provenance: string
   data: WeatherObservation
 }
 
@@ -85,7 +87,7 @@ export interface RiskResponse {
 
 export interface RiskResponseWrapper {
   demo: boolean
-  demo_note: string
+  demo_note: string | null
   environment_mode: 'DEMO' | 'REAL'
   data_provenance: string
   data: RiskResponse
@@ -208,7 +210,9 @@ export interface RiskGridResponse {
 
 export interface RiskGridResponseWrapper {
   demo: boolean
-  demo_note: string
+  demo_note: string | null
+  environment_mode?: 'DEMO' | 'REAL'
+  data_provenance?: string
   data: RiskGridResponse
 }
 

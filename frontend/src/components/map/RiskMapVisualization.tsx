@@ -15,7 +15,6 @@ import { getRiskGrid, getRisk, getNowcast } from '../../services/api'
 import { useAsync } from '../../hooks/useAsync'
 import LoadingState from '../common/LoadingState'
 import ErrorState from '../common/ErrorState'
-import DemoModeIndicator from '../common/DemoModeIndicator'
 import LeafletMap, { type MapRect } from './LeafletMap'
 import type {
   RiskLevel,
@@ -184,9 +183,21 @@ export default function RiskMapVisualization({
                 fitBounds
                 fitToken={fitToken}
                 fitTo={fitTo}
-                demo={gridState.data?.demo}
-                demoLabel="DEMO DATA"
               />
+
+              {/* Live weather data indicator */}
+              {!gridState.data?.demo && (
+                <div className="pointer-events-none absolute left-1/2 top-2.5 z-[500] -translate-x-1/2">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/60 bg-slate-950/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 shadow-lg backdrop-blur"
+                    role="status"
+                    aria-label="Live weather data"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                    LIVE WEATHER DATA
+                  </span>
+                </div>
+              )}
 
               {/* Controls */}
               <div className="absolute right-3 top-3 z-[450] flex flex-col gap-1.5">
@@ -233,14 +244,7 @@ export default function RiskMapVisualization({
               <AlertTriangle className="h-6 w-6 text-slate-600" aria-hidden="true" />
               <span>No risk data is currently available for this location.</span>
             </div>
-          ))}
-
-        {/* Demo badge overlay handled inside LeafletMap; keep a small context note */}
-        {gridState.data?.demo && (
-          <p className="pointer-events-none absolute bottom-1 left-1/2 z-[450] -translate-x-1/2 text-[9px] uppercase tracking-widest text-amber-300/60">
-            Illustrative risk grid
-          </p>
-        )}
+          )          )}
       </div>
 
       {/* Side information card */}
@@ -319,8 +323,18 @@ export default function RiskMapVisualization({
           <p className="text-[10px] text-slate-600">
             {grid?.cells.length ?? 0} analysis cells · {grid ? `${grid.resolution_deg}°` : ''} grid
           </p>
-          {gridState.data?.demo && (
-            <DemoModeIndicator demo note={gridState.data.demo_note} />
+          {!gridState.data?.demo && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/50 bg-emerald-950/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300"
+              role="status"
+              aria-label="Live weather data"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              LIVE
+            </span>
           )}
         </div>
       </aside>

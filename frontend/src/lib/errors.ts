@@ -11,7 +11,7 @@ export function friendlyErrorMessage(err: unknown, fallback?: string): string {
     const backendMsg = (err.response?.data as Record<string, unknown>)?.detail as string | undefined
 
     if (status === 401 || status === 403) {
-      return 'The data service requested restricted credentials. ThunderCast demo intelligence is being used instead.'
+      return 'The data service requested restricted credentials. Data is being served from local fallbacks instead.'
     }
     if (status === 404) {
       return 'The data service endpoint could not be found. If you are using a local backend, check that it is running the latest version.'

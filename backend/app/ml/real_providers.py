@@ -121,9 +121,9 @@ class OpenMeteoWeatherProvider(WeatherDataProvider):
             "current": (
                 "temperature_2m,relative_humidity_2m,dew_point_2m,"
                 "surface_pressure,wind_speed_10m,wind_direction_10m,"
-                "wind_gusts_10m,precipitation,precipitation_rate,cloud_cover,"
-                "cape,cin,lifted_index"
+                "wind_gusts_10m,precipitation,cloud_cover"
             ),
+            "hourly": "cape,convective_inhibition,lifted_index",
             "timezone": "UTC",
         }
         url = f"{self.base_url}?{urllib.parse.urlencode(params)}"
@@ -134,6 +134,18 @@ class OpenMeteoWeatherProvider(WeatherDataProvider):
             raise ProviderUnavailable(f"Open-Meteo request failed: {exc}") from exc
         if "current" not in payload:
             raise ProviderUnavailable("Open-Meteo response missing 'current' block")
+        current = payload.get("current", {})
+        # Merge the first hourly stability values (current hour) into the
+        # current block so CAPE / CIN / lifted-index are available.
+        hourly = payload.get("hourly") or {}
+        for api_key, local_key in (
+            ("cape", "cape"),
+            ("convective_inhibition", "cin"),
+            ("lifted_index", "lifted_index"),
+        ):
+            values = hourly.get(api_key)
+            if isinstance(values, list) and values:
+                current[local_key] = values[0]
         return payload
 
 

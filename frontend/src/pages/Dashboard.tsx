@@ -448,7 +448,7 @@ export default function Dashboard() {
       {/* Monthly Activity Trend */}
       <Panel
         title="Monthly Activity Trend"
-        subtitle="Historical convective activity (demo data)"
+        subtitle="Historical convective activity"
         actions={
           <DemoModeIndicator
             demo={analyticsState.data?.demo}

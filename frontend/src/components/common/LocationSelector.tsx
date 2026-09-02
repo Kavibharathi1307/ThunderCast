@@ -26,37 +26,65 @@ export const INDIA_LOCATIONS: LocationPoint[] = [
 interface LocationSelectorProps {
   value: LocationPoint
   onChange: (location: LocationPoint) => void
+  /** When false (real live data), the status pill shows LIVE WEATHER DATA. */
+  demo?: boolean
 }
 
 export default function LocationSelector({
   value,
   onChange,
+  demo = true,
 }: LocationSelectorProps) {
   const [locating, setLocating] = useState(false)
   const [geoError, setGeoError] = useState<string | null>(null)
 
   function useMyLocation() {
     if (!('geolocation' in navigator)) {
-      setGeoError('Geolocation is not available in this browser.')
+      setGeoError('Geolocation is not supported by this browser.')
       return
     }
     setLocating(true)
     setGeoError(null)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        onChange({
-          name: `Current location (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`,
-          latitude: Number(pos.coords.latitude.toFixed(4)),
-          longitude: Number(pos.coords.longitude.toFixed(4)),
-        })
-        setLocating(false)
-      },
-      () => {
-        setLocating(false)
-        setGeoError('Unable to determine your location. Pick a city below.')
-      },
-      { timeout: 8000 },
-    )
+
+    const success = (pos: GeolocationPosition) => {
+      const lat = pos.coords.latitude
+      const lon = pos.coords.longitude
+      onChange({
+        name: `Current location (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
+        latitude: Number(lat.toFixed(4)),
+        longitude: Number(lon.toFixed(4)),
+      })
+      setLocating(false)
+    }
+
+    const error = (err: GeolocationPositionError) => {
+      setLocating(false)
+      switch (err.code) {
+        case err.PERMISSION_DENIED:
+          setGeoError(
+            'Location permission was denied. Allow location access in your browser and try again.',
+          )
+          break
+        case err.POSITION_UNAVAILABLE:
+          setGeoError(
+            'Your current position is unavailable. Check that device location is enabled, or pick a city below.',
+          )
+          break
+        case err.TIMEOUT:
+          setGeoError(
+            'Timed out while determining your location. Try again, or pick a city below.',
+          )
+          break
+        default:
+          setGeoError('Unable to determine your location. Pick a city below.')
+      }
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 30000,
+    })
   }
 
   return (
@@ -85,6 +113,11 @@ export default function LocationSelector({
               }}
               className="block cursor-pointer rounded-lg border-none bg-transparent text-sm font-semibold text-slate-100 focus:outline-none"
             >
+              {!INDIA_LOCATIONS.some((l) => l.name === value.name) && (
+                <option value={value.name} className="bg-slate-900 text-sky-300">
+                  {value.name}
+                </option>
+              )}
               {INDIA_LOCATIONS.map((loc) => (
                 <option
                   key={loc.name}
@@ -121,7 +154,7 @@ export default function LocationSelector({
           </p>
         </div>
         <div className="hidden h-8 w-px bg-slate-800 sm:block" />
-        <DemoModePill />
+        <DataStatusPill demo={demo} />
       </div>
 
       {geoError && (
@@ -131,19 +164,20 @@ export default function LocationSelector({
   )
 }
 
-function DemoModePill() {
+function DataStatusPill({ demo }: { demo: boolean }) {
+  if (demo) return null
   return (
-    <span className="group/tooltip relative inline-flex items-center gap-1.5" role="status" aria-label="Demo mode">
+    <span
+      className="inline-flex items-center gap-1.5"
+      role="status"
+      aria-label="Live weather data"
+    >
       <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
       </span>
-      <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
-        DEMO MODE
-      </span>
-      <span className="pointer-events-none absolute -bottom-2 right-0 z-30 mb-6 hidden w-60 rounded-lg border border-slate-700 bg-slate-800 p-2.5 text-left text-[11px] font-normal normal-case tracking-normal text-slate-300 shadow-xl group-hover/tooltip:block">
-        ThunderCast is currently using demonstration data. Connect supported
-        data sources for live operational data.
+      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+        LIVE WEATHER DATA
       </span>
     </span>
   )

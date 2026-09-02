@@ -31,11 +31,24 @@ export default function RiskMap() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {!state.data?.demo && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/50 bg-emerald-950/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300"
+              role="status"
+              aria-label="Live weather data"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              LIVE WEATHER DATA
+            </span>
+          )}
           <DemoModeIndicator demo={state.data?.demo} note={state.data?.demo_note} />
         </div>
       </div>
 
-      <LocationSelector value={location} onChange={setLocation} />
+      <LocationSelector value={location} onChange={setLocation} demo={state.data?.demo ?? true} />
 
       {/* Interactive map */}
       <section
@@ -75,7 +88,7 @@ export default function RiskMap() {
       </div>
 
       {/* Risk distribution */}
-      <Panel title="Risk Cell Distribution" subtitle="Demo risk grid overview">
+      <Panel title="Risk Cell Distribution" subtitle="Risk grid overview">
         {state.status === 'loading' && <LoadingState label="Loading…" />}
         {state.status === 'error' && (
           <ErrorState message={state.error ?? 'Risk grid unavailable'} onRetry={state.load} />
@@ -87,8 +100,7 @@ export default function RiskMap() {
               <p className="mt-4 text-xs text-slate-500">
                 Geospatial risk layer rendered from {cells.length} cells. Grid
                 generated at{' '}
-                {new Date(grid.generated_at).toLocaleTimeString()}. Data is
-                clearly-labelled demo data.
+                {new Date(grid.generated_at).toLocaleTimeString()}.
               </p>
             )}
           </div>

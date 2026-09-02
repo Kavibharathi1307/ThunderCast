@@ -14,5 +14,9 @@ services:
         sync: false
       - key: ENVIRONMENT
         value: production
+      - key: ENVIRONMENT_MODE
+        sync: false
+      - key: ALLOW_EXTERNAL_API
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.11

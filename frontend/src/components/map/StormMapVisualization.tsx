@@ -5,7 +5,6 @@ import { getStormCells, getStormTracks } from '../../services/api'
 import { useAsync } from '../../hooks/useAsync'
 import LoadingState from '../common/LoadingState'
 import ErrorState from '../common/ErrorState'
-import DemoModeIndicator from '../common/DemoModeIndicator'
 import LeafletMap, {
   type MapPolyline,
   type MapCircle,
@@ -224,8 +223,6 @@ export default function StormMapVisualization({
                 polylines={polylines}
                 fitBounds
                 fitToken={fitToken}
-                demo={cellsState.data?.demo ?? tracksState.data?.demo}
-                demoLabel="DEMO TRACKS"
                 onMarkerClick={(index) => {
                   const cell = cells[index]
                   if (cell) setSelectedId(cell.id)
@@ -301,9 +298,6 @@ export default function StormMapVisualization({
               <span className="font-medium text-slate-300">{level}</span>
             </span>
           ))}
-          {cellsState.data?.demo && (
-            <DemoModeIndicator demo note={cellsState.data.demo_note} />
-          )}
         </div>
       </div>
 
@@ -351,7 +345,7 @@ export default function StormMapVisualization({
               Moving {compassDirection(selectedCell.movement_direction_deg)} at{' '}
               {selectedCell.movement_speed_kmh.toFixed(0)} km/h — projected track
               shown as the dashed path on the map. Click any storm marker to
-              inspect another cell. Using {cellsState.data?.demo ? 'DEMO tracking data' : 'observed cell data'}.
+              inspect another cell.
             </span>
           </div>
         </div>
